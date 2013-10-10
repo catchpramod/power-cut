@@ -1,0 +1,20 @@
+{
+    "version":"1.0",
+	"name": "Power-Cut",
+    "description": "This app gives you information on NEA load-shedding.",
+    "launch_path": "/index.html",
+    "icons": {
+        "16": "/images/icon16.png",
+        "48": "/images/icon48.png",
+        "128": "/images/icon128.png"
+    },
+	"developer": {
+        "name": "Pramod Bhandari",
+        "url": "http://www.pramodbhandari.com.np"
+    },
+    "default_locale": "en",
+	"type": "privileged",
+    "permissions": {
+        "systemXHR": { "description": "Required to make Ajax Calls over the Network" }
+    }
+}
