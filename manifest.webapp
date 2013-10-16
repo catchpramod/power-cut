@@ -1,5 +1,5 @@
 {
-    "version":"1.0",
+    "version":"1.1",
 	"name": "Power-Cut",
     "description": "This app gives you information on NEA load-shedding.",
     "launch_path": "/index.html",

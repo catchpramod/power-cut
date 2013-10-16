@@ -6,30 +6,47 @@ $(document).ready(function(){
   		window.addEventListener('offline', updateOnlineStatus);
 
 		var group = getLocalGroup();
-		var routine = getLocalRoutineJson();
+
 		$('#select-choice-group').val(group);
 		$('#select-choice-group').selectmenu('refresh');
-		var jsonRender = renderRoutine(group,routine);
+		var jsonRender = renderRoutine();
 		
 		$('#select-choice-group').change(function(){
+			stopTimerFunction();
 			group=$('#select-choice-group').val();
 			setLocalGroup(group);
-			var routine = getLocalRoutineJson();
-			var jsonRender = renderRoutine(group,routine);
+			var jsonRender = renderRoutine();
+			startTimerFunction();
 
 		});
-
-	
 
 		$("#updateBtn").click(function(){
-		  updateSchedule();
-		  
+			stopTimerFunction();
+			updateSchedule();
+			startTimerFunction();
+
 		});
-
-
-	   
 		
+		startTimerFunction();
+
 });
+
+
+function startTimerFunction(){
+	console.log("starting timer!!");
+	timerVar = setTimeout(function(){
+		console.log("repainting from timer!!");
+		var jsonRender = renderRoutine();
+		timerVar = setTimeout(arguments.callee, 15000);
+	},15000);
+}
+
+
+function stopTimerFunction(){
+	console.log("stoping timer!!");
+	clearTimeout(timerVar);
+}
+
 
 
 function startOverlay(msg){
@@ -54,7 +71,6 @@ function stopOverlay(){
 
 function updateOnlineStatus(event){
 	online = navigator.onLine
-	console.log(online);
 	online ? $("#updateBtn").css('display','') : $("#updateBtn").css('display','none');
 }
 
@@ -77,7 +93,6 @@ function getLocalUpdateDate(){
 }
 
 function getLocalRoutineJson(){
-	console.log('getting local routine');
 	// return "[[[5,0,8,0],[13,0,17,0]],[[8,0,11,0],[17,0,20,0]],[[10,0,14,0],[19,30,21,30]],[[6,0,9,0],[14,0,18,0]],[[11,0,16,0],[20,0,22,0]],[[7,0,10,0],[16,0,19,30]],[[9,0,13,0],[18,0,21,0]]]";
 	for (i=0; i<=localStorage.length-1; i++){  
 		key = localStorage.key(i);  
@@ -90,7 +105,6 @@ function getLocalRoutineJson(){
 function setLocalGroup(group){
 	if (window.localStorage) {
       localStorage.setItem("loadshedding_group",group);
-	  console.log("group saved "+group);
 	}
 }
 
@@ -102,7 +116,6 @@ function setLocalUpdateDate(date){
 function setLocalRoutineJson(routine){
 	if (window.localStorage) {
       localStorage.setItem("loadshedding_routine_json",routine);
-      console.log('routine saved!!!')
 	}
 }
 
@@ -115,15 +128,9 @@ function updateSchedule(){
 	    url: "https://dl.dropboxusercontent.com/u/55610371/loadshedding.json",
 	    success: function (routine) {
 	    	stopOverlay();
-	    	console.log(routine);
-	    	// routine = JSON.stringify(routine);
-	    	console.log('after stringify\'' + routine+'\'');
 	    	setLocalRoutineJson(routine);
-	    	var group = getLocalGroup();
-		  	var routine = getLocalRoutineJson();
-		  	console.log('routine::::'+routine);
 		  	startOverlay("Refreshing");
-		  	var test = renderRoutine(group,routine);
+		  	var test = renderRoutine();
 		  	stopOverlay();
 	    },
 	    error: function(error) {
@@ -135,9 +142,9 @@ function updateSchedule(){
 
 
 
-function renderRoutine(group,routine){
-	console.log('rendering routine');
-
+function renderRoutine(){
+	var group = getLocalGroup();
+	var routine = getLocalRoutineJson();
 	var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
 
 	// test = "[[[5,0,8,0],[13,0,17,0]],[[8,0,11,0],[17,0,20,0]],[[10,0,14,0],[19,30,21,30]],[[6,0,9,0],[14,0,18,0]],[[11,0,16,0],[20,0,22,0]],[[7,0,10,0],[16,0,19,30]],[[9,0,13,0],[18,0,21,0]]]";
@@ -149,7 +156,6 @@ function renderRoutine(group,routine){
 	var listJson = new Array();
 
 	$("#list").html("");
-	console.log('routine:  \'' + routine+'\'');
 
 
 	if(routine==' '){
@@ -157,13 +163,11 @@ function renderRoutine(group,routine){
 		$('#list').listview('refresh');
 		listJson.push({day:'',first:'',second:''});
 		finalJson.data = listJson;
-		console.log('No schedule found!!');
 		return finalJson;
 	}
 
 
 	var routineJson = JSON.parse(routine);
-	console.log('routinejson:  \'' + routineJson+'\'');
 
 	start = start++;
 
@@ -192,27 +196,44 @@ function renderRoutine(group,routine){
 		secondEndHour = secondShift[2];
 		secondEndMin = secondShift[3];
 
-		firstString=parseHour(firstStartHour,firstStartMin)+" - "+parseHour(firstEndHour,firstEndMin);
-		secondString=parseHour(secondStartHour,secondStartMin)+" - "+parseHour(secondEndHour,secondEndMin);
+		firstString=parseHour(firstStartHour,firstStartMin)+" ‒ "+parseHour(firstEndHour,firstEndMin);
+		secondString=parseHour(secondStartHour,secondStartMin)+" ‒ "+parseHour(secondEndHour,secondEndMin);
+		timestring=firstString +"<br/>"+secondString
 
 		day = days[i];
 
 		eachJson = {day:day,first:firstString,second:secondString};
         listJson.push(eachJson);
 
-		console.log(eachJson);
-		console.log(listJson);
+		var weekday =+ new Date().getDay();
+		var styleClass="";
+		var darkbulb="";
+		var lightbulb="";
+		if(i==weekday){
+			styleClass = "today";
+			powerOut=isPowerOut(firstStartHour, firstStartMin, firstEndHour, firstEndMin, secondStartHour, secondStartMin, secondEndHour, secondEndMin);
+			darkbulb= powerOut?"show":"hide";
+			lightbulb= powerOut?"hide":"show";
+		}else{
+			styleClass = "nottoday";
+		}
+		
+		bulbHtml= '<div class="current-status"> <img id="darkbulb" class="'+darkbulb+'" src="images/bulb_dark_32.png"/>';
+		bulbHtml+= '<img id="lightbulb" class="'+lightbulb+'" src="images/bulb_light_32.png"/>';
+		bulbHtml+= '</div>';
 
-
+		
 				
-		listElement= "<li style=\"padding: 10px 5px;\"><div class=\"ui-grid-b\"><div class=\"ui-block-a\" style=\"margin-right: -10px;\">";
+		listElement= "<li ";
+		listElement+= "class =\""+styleClass+"\"";
+		listElement+="><div class=\"ui-block-p\">";
 		listElement+=day;
-		listElement+="</div><div class=\"ui-block-b\" class=\"hours\" style=\"font-weight: 100; font-size: 14px; margin-right: 10px;\" align=\"center\">";
-		listElement+=firstString;
-		listElement+="</div><div class=\"ui-block-c\" class=\"hours\" style=\"font-weight: 100; font-size: 14px;\" align=\"center\">";
-		listElement+=secondString;
-		listElement+="</div></div></li>";
-
+		listElement+="</div><div class=\"ui-block-q\"><div class=\"timetext\">";
+		listElement+=timestring;
+		listElement+="</div>";
+		listElement+=bulbHtml;
+		listElement+="</div></li>"
+		
 		$("#list").append(listElement);
 		$('#list').listview('refresh');
 
@@ -222,20 +243,38 @@ function renderRoutine(group,routine){
 
 
 	finalJson.data = listJson;
-	console.log(finalJson);
+
 	return finalJson;
+}
+
+function isPowerOut(fsh,fsm,feh,fem,ssh,ssm,seh,sem){
+	var now = new Date();
+	var fstart = new Date(now.getFullYear(),now.getMonth(),now.getDate(),fsh,fsm).getTime();
+	var fend = new Date(now.getFullYear(),now.getMonth(),now.getDate(),feh,fem).getTime();
+	var sstart = new Date(now.getFullYear(),now.getMonth(),now.getDate(),ssh,ssm).getTime();
+	var send = new Date(now.getFullYear(),now.getMonth(),now.getDate(),seh,sem).getTime();
+	console.log(now.getMinutes());
+	now = now.getTime();
+
+
+	if(((fstart < now ) && (now < fend )) || ((sstart < now ) && (now < send )) ) {
+	  return true;
+	}
+	else {
+	 return false;
+	}
 }
 
 function parseHour(hour,min){
 	tail="A";
 	if (hour<12){
-		tail="A";
+		tail=" AM";
 
 	}else if (hour==12&& min == 0){
-		tail="A";
+		tail=" AM";
 	}else{
 		hour=hour-12;
-		tail="P";
+		tail=" PM";
 	}
 
 	hs = hour;
@@ -247,6 +286,4 @@ function parseHour(hour,min){
 	return hs +":"+ms+tail;
 
 }
-
-// http://udacityblogg.appspot.com/loadshedding.json
 
