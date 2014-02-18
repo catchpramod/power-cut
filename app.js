@@ -34,17 +34,17 @@ $(document).ready(function(){
 
 function startTimerFunction(){
 	console.log("starting timer!!");
-	timerVar = setTimeout(function(){
-		console.log("repainting from timer!!");
-		var jsonRender = renderRoutine();
-		timerVar = setTimeout(arguments.callee, 15000);
-	},15000);
+	// timerVar = setTimeout(function(){
+	// 	console.log("repainting from timer!!");
+	// 	var jsonRender = renderRoutine();
+	// 	timerVar = setTimeout(arguments.callee, 15000);
+	// },15000);
 }
 
 
 function stopTimerFunction(){
 	console.log("stoping timer!!");
-	clearTimeout(timerVar);
+	// clearTimeout(timerVar);
 }
 
 
@@ -144,10 +144,11 @@ function updateSchedule(){
 
 function renderRoutine(){
 	var group = getLocalGroup();
-	var routine = getLocalRoutineJson();
 	var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+	// var routine = "[[[1,0,3,0],[7,0,13,0],[17,0,20,0]],[[1,0,3,0],[7,0,13,0],[17,0,20,0]],[[1,0,3,0],[7,0,13,0],[17,0,20,0]],[[1,0,3,0],[7,0,13,0],[17,0,20,0]],[[1,0,3,0],[7,0,13,0],[17,0,20,0]],[[1,0,3,0],[7,0,13,0],[17,0,20,0]],[[1,0,3,0],[7,0,13,0],[17,0,20,0]]]";
+	// var routine="[[[5,0,8,0],[13,0,17,0]],[[8,0,11,0],[17,0,20,0]],[[10,0,14,0],[19,30,21,30]],[[6,0,9,0],[14,0,18,0]],[[11,0,16,0],[20,0,22,0]],[[7,0,10,0],[16,0,19,30]],[[9,0,13,0],[18,0,21,0]]]";
+	var routine = getLocalRoutineJson();
 
-	// test = "[[[5,0,8,0],[13,0,17,0]],[[8,0,11,0],[17,0,20,0]],[[10,0,14,0],[19,30,21,30]],[[6,0,9,0],[14,0,18,0]],[[11,0,16,0],[20,0,22,0]],[[7,0,10,0],[16,0,19,30]],[[9,0,13,0],[18,0,21,0]]]";
 
 	var start=0;
 	var start =+group;
@@ -179,30 +180,34 @@ function renderRoutine(){
 		var pointer = (8-start+i) % 7;
 		if(pointer<0) pointer=pointer+7;
 
+		var powerOut = false;
 		var day = routineJson[pointer];
+		var shift = new Array();
+		var totalShifts= day.length;
+		var timeString="";
+		var shiftString="";
+		var eachJson={ };
+		eachJson["day"]=day;
+		for(j=0;j<totalShifts;j++){
+			shift= day[j];
 
-		var firstShift= new Array();
-		firstShift= day[0];
-		var secondShift= new Array();
-		secondShift= day[1];
+			startHour = shift[0];
+			startMin = shift[1];
+			endHour = shift[2];
+			endMin = shift[3];
+			
+			shiftString=parseHour(startHour,startMin)+" ‒ "+parseHour(endHour,endMin);
+			timeString+=shiftString +"<br/>"
 
-		firstStartHour = firstShift[0];
-		firstStartMin = firstShift[1];
-		firstEndHour = firstShift[2];
-		firstEndMin = firstShift[3];
+			eachJson[j]=shiftString;
+			powerOut= (powerOut || isPowerOut(startHour,startMin,endHour,endMin));
+			console.log(shiftString);
+			console.log(powerOut);
 
-		secondStartHour = secondShift[0];
-		secondStartMin = secondShift[1];
-		secondEndHour = secondShift[2];
-		secondEndMin = secondShift[3];
-
-		firstString=parseHour(firstStartHour,firstStartMin)+" ‒ "+parseHour(firstEndHour,firstEndMin);
-		secondString=parseHour(secondStartHour,secondStartMin)+" ‒ "+parseHour(secondEndHour,secondEndMin);
-		timestring=firstString +"<br/>"+secondString
+		}
 
 		day = days[i];
 
-		eachJson = {day:day,first:firstString,second:secondString};
         listJson.push(eachJson);
 
 		var weekday =+ new Date().getDay();
@@ -211,7 +216,6 @@ function renderRoutine(){
 		var lightbulb="";
 		if(i==weekday){
 			styleClass = "today";
-			powerOut=isPowerOut(firstStartHour, firstStartMin, firstEndHour, firstEndMin, secondStartHour, secondStartMin, secondEndHour, secondEndMin);
 			darkbulb= powerOut?"show":"hide";
 			lightbulb= powerOut?"hide":"show";
 		}else{
@@ -229,7 +233,7 @@ function renderRoutine(){
 		listElement+="><div class=\"ui-block-p\">";
 		listElement+=day;
 		listElement+="</div><div class=\"ui-block-q\"><div class=\"timetext\">";
-		listElement+=timestring;
+		listElement+=timeString;
 		listElement+="</div>";
 		listElement+=bulbHtml;
 		listElement+="</div></li>"
@@ -242,7 +246,7 @@ function renderRoutine(){
 	}
 
 
-	finalJson.data = listJson;
+	// finalJson.data = listJson;
 
 	return finalJson;
 }
@@ -251,13 +255,11 @@ function isPowerOut(fsh,fsm,feh,fem,ssh,ssm,seh,sem){
 	var now = new Date();
 	var fstart = new Date(now.getFullYear(),now.getMonth(),now.getDate(),fsh,fsm).getTime();
 	var fend = new Date(now.getFullYear(),now.getMonth(),now.getDate(),feh,fem).getTime();
-	var sstart = new Date(now.getFullYear(),now.getMonth(),now.getDate(),ssh,ssm).getTime();
-	var send = new Date(now.getFullYear(),now.getMonth(),now.getDate(),seh,sem).getTime();
 	console.log(now.getMinutes());
 	now = now.getTime();
 
 
-	if(((fstart < now ) && (now < fend )) || ((sstart < now ) && (now < send )) ) {
+	if(((fstart < now ) && (now < fend ))) {
 	  return true;
 	}
 	else {
